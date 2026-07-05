@@ -1,0 +1,100 @@
+<!DOCTYPE html>
+<html lang="en">
+<%- include('partials/head', { title: 'Students' }) %>
+<body class="bg-gray-50 dark:bg-gray-900 min-h-screen text-gray-800 dark:text-gray-200 flex flex-col antialiased transition-colors duration-300">
+    
+    <%- include('partials/navbar') %>
+
+    <main class="flex-1 overflow-auto p-8 max-w-7xl mx-auto w-full">
+        <header class="flex justify-between items-center mb-8">
+            <h2 class="text-2xl font-bold text-gray-800 dark:text-white">Student Directory</h2>
+            <button onclick="document.getElementById('modal').classList.remove('hidden')" class="bg-indigo-600 hover:bg-indigo-700 text-white font-medium py-2 px-5 rounded-lg shadow-sm transition">
+                + Add Student
+            </button>
+        </header>
+        
+        <div class="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 overflow-x-auto">
+            <table class="w-full text-left border-collapse">
+                <thead class="bg-gray-50 dark:bg-gray-700/50 border-b border-gray-200 dark:border-gray-700">
+                    <tr class="text-gray-500 dark:text-gray-400 text-sm">
+                        <th class="py-4 px-6 font-semibold">Name</th>
+                        <th class="py-4 px-6 font-semibold">Roll Number</th>
+                        <th class="py-4 px-6 font-semibold">Email</th>
+                        <th class="py-4 px-6 font-semibold text-right">Actions</th>
+                    </tr>
+                </thead>
+                <tbody id="tableBody" class="text-sm divide-y divide-gray-100 dark:divide-gray-700">
+                </tbody>
+            </table>
+        </div>
+    </main>
+
+    <!-- Modal -->
+    <div id="modal" class="hidden fixed inset-0 bg-gray-900 bg-opacity-50 dark:bg-opacity-80 flex items-center justify-center z-50 p-4">
+        <div class="bg-white dark:bg-gray-800 rounded-xl shadow-2xl p-8 max-w-md w-full relative">
+            <button onclick="document.getElementById('modal').classList.add('hidden')" class="absolute top-4 right-4 text-gray-400 hover:text-gray-600 dark:hover:text-gray-200">
+                <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg>
+            </button>
+            <h2 class="text-xl font-bold mb-6 dark:text-white">Register Student</h2>
+            <form id="addForm" class="space-y-4">
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Full Name</label>
+                    <input type="text" id="name" required class="w-full border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-white rounded-lg shadow-sm focus:ring-indigo-500 focus:border-indigo-500 px-3 py-2 border">
+                </div>
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Roll Number</label>
+                    <input type="text" id="rollNumber" required class="w-full border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-white rounded-lg shadow-sm focus:ring-indigo-500 focus:border-indigo-500 px-3 py-2 border">
+                </div>
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Email</label>
+                    <input type="email" id="email" required class="w-full border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-white rounded-lg shadow-sm focus:ring-indigo-500 focus:border-indigo-500 px-3 py-2 border">
+                </div>
+                <button type="submit" class="w-full bg-indigo-600 text-white font-medium py-2 px-4 rounded-lg">Register</button>
+            </form>
+        </div>
+    </div>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', loadData);
+        async function loadData() {
+            const res = await api.get('/api/students');
+            if (!res.ok) return;
+            const tbody = document.getElementById('tableBody');
+            tbody.innerHTML = '';
+            res.data.forEach(item => {
+                tbody.innerHTML += `
+                    <tr class="hover:bg-gray-50 dark:hover:bg-gray-700/50">
+                        <td class="py-3 px-6 font-medium text-gray-800 dark:text-white">${item.name}</td>
+                        <td class="py-3 px-6 text-gray-500 dark:text-gray-400">${item.rollNumber}</td>
+                        <td class="py-3 px-6 text-gray-500 dark:text-gray-400">${item.email}</td>
+                        <td class="py-3 px-6 text-right">
+                            <button onclick="deleteItem('${item._id}')" class="text-red-500 hover:text-red-700 dark:text-red-400 dark:hover:text-red-300 text-sm font-medium">Delete</button>
+                        </td>
+                    </tr>
+                `;
+            });
+        }
+        document.getElementById('addForm').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const payload = {
+                name: document.getElementById('name').value,
+                rollNumber: document.getElementById('rollNumber').value,
+                email: document.getElementById('email').value
+            };
+            const res = await api.post('/api/students', payload);
+            if (res.ok) {
+                document.getElementById('modal').classList.add('hidden');
+                document.getElementById('addForm').reset();
+                loadData();
+            } else { alert(res.data.error || 'Error'); }
+        });
+        async function deleteItem(id) {
+            showConfirmModal('Delete Student', 'Are you sure you want to remove this student from the directory?', 'Delete Student', true, async () => {
+                const res = await api.delete(`/api/students/${id}`);
+                if (res.ok) loadData();
+            });
+        }
+    </script>
+    <%- include('partials/confirm_modal') %>
+</body>
+</html>

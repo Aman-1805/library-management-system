@@ -1,0 +1,107 @@
+<!DOCTYPE html>
+<html lang="en">
+<%- include('partials/head', { title: 'Transactions' }) %>
+<body class="bg-gray-50 dark:bg-gray-900 min-h-screen text-gray-800 dark:text-gray-200 flex flex-col antialiased transition-colors duration-300">
+    
+    <%- include('partials/navbar') %>
+
+    <main class="flex-1 overflow-auto p-8 max-w-7xl mx-auto w-full">
+        <header class="flex justify-between items-center mb-8">
+            <h2 class="text-2xl font-bold text-gray-800 dark:text-white">Transactions & Issue</h2>
+            <button onclick="document.getElementById('modal').classList.remove('hidden')" class="bg-indigo-600 hover:bg-indigo-700 text-white font-medium py-2 px-5 rounded-lg shadow-sm transition">
+                Issue Book
+            </button>
+        </header>
+        
+        <div class="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 overflow-x-auto">
+            <table class="w-full text-left border-collapse">
+                <thead class="bg-gray-50 dark:bg-gray-700/50 border-b border-gray-200 dark:border-gray-700">
+                    <tr class="text-gray-500 dark:text-gray-400 text-sm">
+                        <th class="py-4 px-6 font-semibold">Book</th>
+                        <th class="py-4 px-6 font-semibold">Student</th>
+                        <th class="py-4 px-6 font-semibold">Issue Date</th>
+                        <th class="py-4 px-6 font-semibold">Status</th>
+                        <th class="py-4 px-6 font-semibold text-right">Actions</th>
+                    </tr>
+                </thead>
+                <tbody id="tableBody" class="text-sm divide-y divide-gray-100 dark:divide-gray-700">
+                </tbody>
+            </table>
+        </div>
+    </main>
+
+    <!-- Modal -->
+    <div id="modal" class="hidden fixed inset-0 bg-gray-900 bg-opacity-50 dark:bg-opacity-80 flex items-center justify-center z-50 p-4">
+        <div class="bg-white dark:bg-gray-800 rounded-xl shadow-2xl p-8 max-w-md w-full relative">
+            <button onclick="document.getElementById('modal').classList.add('hidden')" class="absolute top-4 right-4 text-gray-400 hover:text-gray-600 dark:hover:text-gray-200">
+                <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg>
+            </button>
+            <h2 class="text-xl font-bold mb-6 dark:text-white">Issue Book</h2>
+            <form id="issueForm" class="space-y-4">
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Select Book</label>
+                    <select id="bookId" required class="w-full border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-white rounded-lg shadow-sm focus:ring-indigo-500 focus:border-indigo-500 px-3 py-2 border">
+                        <option value="">Loading...</option>
+                    </select>
+                </div>
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Select Student</label>
+                    <select id="studentId" required class="w-full border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-white rounded-lg shadow-sm focus:ring-indigo-500 focus:border-indigo-500 px-3 py-2 border">
+                        <option value="">Loading...</option>
+                    </select>
+                </div>
+                <button type="submit" class="w-full bg-indigo-600 text-white font-medium py-2 px-4 rounded-lg">Confirm Issue</button>
+            </form>
+        </div>
+    </div>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            loadTransactions(); loadSelects();
+        });
+        async function loadTransactions() {
+            const res = await api.get('/api/transactions');
+            if (!res.ok) return;
+            const tbody = document.getElementById('tableBody');
+            tbody.innerHTML = '';
+            res.data.forEach(item => {
+                const badge = item.status === 'Issued' ? `<span class="text-amber-600 dark:text-amber-400 bg-amber-50 dark:bg-amber-900/30 px-2 py-1 rounded-full text-xs font-semibold">Issued</span>` : `<span class="text-green-600 dark:text-green-400 bg-green-50 dark:bg-green-900/30 px-2 py-1 rounded-full text-xs font-semibold">Returned</span>`;
+                const returnBtn = item.status === 'Issued' ? `<button onclick="returnBook('${item._id}')" class="text-indigo-600 hover:text-indigo-800 dark:text-indigo-400 dark:hover:text-indigo-300 text-sm font-medium">Mark Returned</button>` : `-`;
+                const bookTitle = item.bookId ? item.bookId.title : 'Deleted Book';
+                const studentInfo = item.studentId ? `${item.studentId.name} (${item.studentId.rollNumber})` : 'Deleted Student';
+                tbody.innerHTML += `
+                    <tr class="hover:bg-gray-50 dark:hover:bg-gray-700/50">
+                        <td class="py-3 px-6 font-medium text-gray-800 dark:text-white">${bookTitle}</td>
+                        <td class="py-3 px-6 text-gray-500 dark:text-gray-400">${studentInfo}</td>
+                        <td class="py-3 px-6 text-gray-500 dark:text-gray-400">${new Date(item.issueDate).toLocaleDateString()}</td>
+                        <td class="py-3 px-6">${badge}</td>
+                        <td class="py-3 px-6 text-right">${returnBtn}</td>
+                    </tr>
+                `;
+            });
+        }
+        async function loadSelects() {
+            const [booksRes, studentsRes] = await Promise.all([ api.get('/api/books'), api.get('/api/students') ]);
+            const bookSelect = document.getElementById('bookId'); const studentSelect = document.getElementById('studentId');
+            bookSelect.innerHTML = '<option value="">Select Book</option>';
+            if(booksRes.ok) { booksRes.data.forEach(b => { if(b.availableCopies > 0) bookSelect.innerHTML += `<option value="${b._id}">${b.title} (${b.availableCopies} left)</option>`; }); }
+            studentSelect.innerHTML = '<option value="">Select Student</option>';
+            if(studentsRes.ok) { studentsRes.data.forEach(s => { studentSelect.innerHTML += `<option value="${s._id}">${s.name} (${s.rollNumber})</option>`; }); }
+        }
+        document.getElementById('issueForm').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const payload = { bookId: document.getElementById('bookId').value, studentId: document.getElementById('studentId').value };
+            const res = await api.post('/api/transactions/issue', payload);
+            if (res.ok) { document.getElementById('modal').classList.add('hidden'); document.getElementById('issueForm').reset(); loadTransactions(); loadSelects(); } 
+            else { alert(res.data.error || 'Error issuing book'); }
+        });
+        async function returnBook(id) {
+            showConfirmModal('Return Book', 'Are you sure you want to mark this book as returned by the student?', 'Yes, Return It', false, async () => {
+                const res = await api.post(`/api/transactions/return`, { transactionId: id });
+                if (res.ok) { loadTransactions(); loadSelects(); }
+            });
+        }
+    </script>
+    <%- include('partials/confirm_modal') %>
+</body>
+</html>

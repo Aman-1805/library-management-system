@@ -1,0 +1,47 @@
+<!DOCTYPE html>
+<html lang="en">
+<%- include('partials/head', { title: 'Dashboard' }) %>
+<body class="bg-gradient-to-br from-indigo-50 to-purple-100 dark:from-gray-900 dark:to-gray-800 min-h-screen text-gray-800 dark:text-gray-200 flex flex-col antialiased transition-colors duration-300">
+    
+    <%- include('partials/navbar') %>
+
+    <main class="flex-1 overflow-auto p-8 max-w-7xl mx-auto w-full">
+        <header class="mb-8">
+            <h2 class="text-2xl font-bold text-gray-800 dark:text-white">Dashboard Overview</h2>
+        </header>
+        
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
+            <div class="glass-panel p-6 rounded-2xl shadow-sm">
+                <h3 class="text-sm font-medium text-gray-500 dark:text-gray-400 mb-1">Total Books</h3>
+                <p class="text-3xl font-bold text-gray-800 dark:text-white" id="statBooks">...</p>
+            </div>
+            <div class="glass-panel p-6 rounded-2xl shadow-sm">
+                <h3 class="text-sm font-medium text-gray-500 dark:text-gray-400 mb-1">Registered Students</h3>
+                <p class="text-3xl font-bold text-gray-800 dark:text-white" id="statStudents">...</p>
+            </div>
+            <div class="glass-panel p-6 rounded-2xl shadow-sm">
+                <h3 class="text-sm font-medium text-gray-500 dark:text-gray-400 mb-1">Active Issues</h3>
+                <p class="text-3xl font-bold text-gray-800 dark:text-white" id="statIssues">...</p>
+            </div>
+        </div>
+    </main>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', async () => {
+            try {
+                const [books, students, transactions] = await Promise.all([
+                    api.get('/api/books'),
+                    api.get('/api/students'),
+                    api.get('/api/transactions')
+                ]);
+                if(books.ok) document.getElementById('statBooks').textContent = books.data.length;
+                if(students.ok) document.getElementById('statStudents').textContent = students.data.length;
+                if(transactions.ok) {
+                    const active = transactions.data.filter(t => t.status === 'Issued');
+                    document.getElementById('statIssues').textContent = active.length;
+                }
+            } catch (e) { console.error(e); }
+        });
+    </script>
+</body>
+</html>

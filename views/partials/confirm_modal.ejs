@@ -1,0 +1,78 @@
+<!-- Custom Confirmation Modal -->
+<div id="confirmModal" class="hidden fixed inset-0 bg-gray-900 bg-opacity-50 dark:bg-opacity-80 flex items-center justify-center z-[60] p-4 backdrop-blur-sm transition-opacity">
+    <div class="bg-white dark:bg-gray-800 rounded-3xl shadow-2xl p-6 max-w-sm w-full relative transform scale-95 transition-transform duration-200" id="confirmModalContent">
+        <div class="text-center">
+            <div id="confirmIconContainer" class="w-16 h-16 rounded-full flex items-center justify-center mx-auto mb-4">
+                <svg class="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path id="confirmIconPath" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d=""></path>
+                </svg>
+            </div>
+            <h3 class="text-xl font-bold text-gray-900 dark:text-white mb-2" id="confirmTitle">Confirm Action</h3>
+            <p class="text-gray-500 dark:text-gray-400 mb-6 text-sm" id="confirmMessage">Are you sure you want to proceed?</p>
+            <div class="flex space-x-3">
+                <button id="confirmCancelBtn" class="flex-1 bg-gray-100 hover:bg-gray-200 dark:bg-gray-700 dark:hover:bg-gray-600 text-gray-800 dark:text-white font-medium py-2.5 rounded-xl transition-colors">
+                    Cancel
+                </button>
+                <button id="confirmActionBtn" class="flex-1 text-white font-medium py-2.5 rounded-xl transition-colors shadow-sm">
+                    Confirm
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+    let confirmCallback = null;
+
+    function showConfirmModal(title, message, confirmText, isDanger, callback) {
+        document.getElementById('confirmTitle').textContent = title;
+        document.getElementById('confirmMessage').textContent = message;
+        
+        const actionBtn = document.getElementById('confirmActionBtn');
+        actionBtn.textContent = confirmText;
+        
+        const iconContainer = document.getElementById('confirmIconContainer');
+        const iconPath = document.getElementById('confirmIconPath');
+        
+        if (isDanger) {
+            actionBtn.className = "flex-1 bg-red-600 hover:bg-red-700 text-white font-medium py-2.5 rounded-xl transition-colors shadow-sm shadow-red-500/30";
+            iconContainer.className = "w-16 h-16 rounded-full bg-red-100 dark:bg-red-900/30 flex items-center justify-center mx-auto mb-4 text-red-600 dark:text-red-400";
+            iconPath.setAttribute('d', "M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z");
+        } else {
+            actionBtn.className = "flex-1 bg-indigo-600 hover:bg-indigo-700 text-white font-medium py-2.5 rounded-xl transition-colors shadow-sm shadow-indigo-500/30";
+            iconContainer.className = "w-16 h-16 rounded-full bg-indigo-100 dark:bg-indigo-900/30 flex items-center justify-center mx-auto mb-4 text-indigo-600 dark:text-indigo-400";
+            iconPath.setAttribute('d', "M5 13l4 4L19 7");
+        }
+
+        confirmCallback = callback;
+        
+        const modal = document.getElementById('confirmModal');
+        const content = document.getElementById('confirmModalContent');
+        
+        modal.classList.remove('hidden');
+        setTimeout(() => {
+            content.classList.remove('scale-95');
+            content.classList.add('scale-100');
+        }, 10);
+    }
+
+    function hideConfirmModal() {
+        const modal = document.getElementById('confirmModal');
+        const content = document.getElementById('confirmModalContent');
+        
+        content.classList.remove('scale-100');
+        content.classList.add('scale-95');
+        
+        setTimeout(() => {
+            modal.classList.add('hidden');
+            confirmCallback = null;
+        }, 200);
+    }
+
+    document.getElementById('confirmCancelBtn').addEventListener('click', hideConfirmModal);
+    
+    document.getElementById('confirmActionBtn').addEventListener('click', () => {
+        if (confirmCallback) confirmCallback();
+        hideConfirmModal();
+    });
+</script>
